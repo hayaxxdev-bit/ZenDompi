@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── CORE USER ─────────────────────────────────
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String?   @unique @db.VarChar(255)
+  phoneNumber  String?   @unique @db.VarChar(20) @map("phone_number")
+  telegramId   BigInt?   @unique @map("telegram_id")
+  name         String?   @db.VarChar(100)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  wallets      Wallet[]
+  categories   Category[]
+  transactions Transaction[]
+
+  @@map("users")
+}
+
+// ─── WALLET (MULTI-DOMPET) ─────────────────────
+model Wallet {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  name           String   @db.VarChar(100)
+  type           String   @db.VarChar(50) // bank, e-wallet, cash
+  currency       String   @default("IDR") @db.Char(3)
+  initialBalance Decimal  @default(0.00) @map("initial_balance") @db.Decimal(15, 2)
+  isArchived     Boolean  @default(false) @map("is_archived")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries LedgerEntry[]
+
+  @@index([userId])
+  @@map("wallets")
+}
+
+// ─── CATEGORY ──────────────────────────────────
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  name      String    @db.VarChar(50)
+  type      String    @db.VarChar(10) // income, expense, transfer
+  icon      String?   @db.VarChar(50)
+  parentId  String?   @map("parent_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[]  @relation("CategoryHierarchy")
+  transactions Transaction[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("categories")
+}
+
+// ─── TRANSACTION ───────────────────────────────
+model Transaction {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  categoryId      String?  @map("category_id") @db.Uuid
+  type            String   @db.VarChar(10) // income, expense, transfer
+  description     String   @default("") @db.Text
+  totalAmount     Decimal  @map("total_amount") @db.Decimal(15, 2)
+  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamptz()
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  ledgerEntries LedgerEntry[]
+
+  @@index([userId, transactionDate(sort: Desc)])
+  @@map("transactions")
+}
+
+// ─── DOUBLE-ENTRY LEDGER ──────────────────────
+model LedgerEntry {
+  id            String  @id @default(uuid()) @db.Uuid
+  transactionId String  @map("transaction_id") @db.Uuid
+  walletId      String  @map("wallet_id") @db.Uuid
+  accountType   String  @map("account_type") @db.VarChar(5) // debit or credit
+  amount        Decimal @db.Decimal(15, 2)
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@unique([transactionId, walletId])
+  @@index([transactionId])
+  @@index([walletId])
+  @@map("ledger_entries")
+}

@@ -1,0 +1,35 @@
+{
+  "extends": "@zendompi/typescript-config/base.json",
+  "compilerOptions": {
+    // File Layout (Dilepas rootDir spesifik agar prisma.config.ts di luar src/ ikut terbaca)
+    "outDir": "./dist",
+
+    // Environment Settings
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
+    "types": ["node"], // <-- Mengaktifkan tipe Node.js untuk process.env & dotenv
+
+    // Other Outputs
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Stricter Typechecking Options
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Recommended Options
+    "strict": true,
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true
+  },
+  
+  // Memasukkan folder src DAN file prisma.config.ts
+  "include": ["src/**/*.ts", "prisma.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
