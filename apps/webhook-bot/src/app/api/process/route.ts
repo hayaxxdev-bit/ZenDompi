@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractTransactionFromChat } from "@/lib/gemini";
+import { 
+  extractTransactionFromChat, 
+  extractWithRegex, 
+  type ExtractedTransaction 
+} from "@/lib/gemini";
 import { sendTelegramMessage } from "@/lib/telegram";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
-import { prisma, transferBetweenWallets, createTransaction } from "@zendompi/database";
-import type { ExtractedTransaction } from "@/lib/gemini";
+import {
+  prisma,
+  transferBetweenWallets,
+  createTransaction,
+} from "@zendompi/database";
 
 // ─── Wallet Name → ID Mapping ──────────────────
 async function findWalletId(
   userId: string,
-  walletName: string
+  walletName: string,
 ): Promise<string | null> {
   const wallet = await prisma.wallet.findFirst({
     where: {
@@ -24,7 +31,7 @@ async function findWalletId(
 // ─── Kategori Name → ID Mapping ────────────────
 async function findCategoryId(
   userId: string,
-  categoryName: string
+  categoryName: string,
 ): Promise<string | null> {
   const category = await prisma.category.findFirst({
     where: {
@@ -44,7 +51,7 @@ function formatRupiah(amount: number): string {
 // ─── Proses Transaksi ──────────────────────────
 async function processTransaction(
   userId: string,
-  extracted: ExtractedTransaction
+  extracted: ExtractedTransaction,
 ): Promise<string> {
   try {
     switch (extracted.type) {
@@ -56,20 +63,21 @@ async function processTransaction(
         const fromId = await findWalletId(userId, extracted.fromWallet);
         const toId = await findWalletId(userId, extracted.toWallet);
 
-        if (!fromId) return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
+        if (!fromId)
+          return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
         if (!toId) return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
 
         const categoryId = extracted.category
-          ? await findCategoryId(userId, extracted.category)
-          : null;
+          ? (await findCategoryId(userId, extracted.category)) ?? undefined
+          : undefined;
 
-        const result = await transferBetweenWallets({
+        await transferBetweenWallets({
           userId,
           fromWalletId: fromId,
           toWalletId: toId,
           amount: extracted.amount,
-          description: extracted.description,
-          categoryId,
+          description: extracted.description || "",
+          ...(categoryId && { categoryId }),
         });
 
         return `✅ Transfer berhasil!\n📤 ${extracted.fromWallet} → 📥 ${extracted.toWallet}\n💵 ${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
@@ -81,19 +89,20 @@ async function processTransaction(
         }
 
         const walletId = await findWalletId(userId, extracted.fromWallet);
-        if (!walletId) return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
+        if (!walletId)
+          return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
 
         const categoryId = extracted.category
-          ? await findCategoryId(userId, extracted.category)
-          : null;
+          ? (await findCategoryId(userId, extracted.category)) ?? undefined
+          : undefined;
 
         await createTransaction({
           userId,
           walletId,
           type: "expense",
           amount: extracted.amount,
-          description: extracted.description,
-          categoryId,
+          description: extracted.description || "",
+          ...(categoryId && { categoryId }),
         });
 
         return `✅ Pengeluaran dicatat!\n📤 ${extracted.fromWallet}\n💵 -${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
@@ -105,19 +114,20 @@ async function processTransaction(
         }
 
         const walletId = await findWalletId(userId, extracted.toWallet);
-        if (!walletId) return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
+        if (!walletId)
+          return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
 
         const categoryId = extracted.category
-          ? await findCategoryId(userId, extracted.category)
-          : null;
+          ? (await findCategoryId(userId, extracted.category)) ?? undefined
+          : undefined;
 
         await createTransaction({
           userId,
           walletId,
           type: "income",
           amount: extracted.amount,
-          description: extracted.description,
-          categoryId,
+          description: extracted.description || "",
+          ...(categoryId && { categoryId }),
         });
 
         return `✅ Pemasukan dicatat!\n📥 ${extracted.toWallet}\n💵 +${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
@@ -140,21 +150,31 @@ export async function POST(req: NextRequest) {
 
     console.log(`📩 [${platform}] ${userName}: ${message}`);
 
-    // 1. Ekstrak transaksi dengan Gemini
-    const extracted = await extractTransactionFromChat(message);
+    // 1. Try Gemini extraction, fallback to regex
+    let extracted: ExtractedTransaction | null = await extractTransactionFromChat(message);
 
     if (!extracted) {
-      const errorMsg = "❌ Maaf, saya tidak bisa memahami transaksi kamu. Coba tulis lebih jelas ya!\nContoh: Top up GoPay 50rb pake BCA";
-      
+      console.log("⚠️ Gemini failed, trying regex fallback...");
+      extracted = extractWithRegex(message);
+    }
+
+    if (!extracted) {
+      const errorMsg =
+        "❌ Maaf, saya tidak bisa memahami transaksi kamu.\n\n" +
+        "Coba tulis dengan format:\n" +
+        "📤 <b>Pengeluaran:</b> Makan 25rb pake GoPay\n" +
+        "📥 <b>Pemasukan:</b> Gaji 5jt masuk BCA\n" +
+        "🔄 <b>Transfer:</b> Top up OVO 50rb dari BCA";
+
       if (platform === "telegram") await sendTelegramMessage(chatId, errorMsg);
       else if (platform === "whatsapp") await sendWhatsAppMessage(chatId, errorMsg);
-      
+
       return NextResponse.json({ ok: true });
     }
 
     console.log("🤖 Extracted:", JSON.stringify(extracted, null, 2));
 
-    // 2. Cari user berdasarkan platform
+    // 2. Find/create user logic...
     let user;
     if (platform === "telegram") {
       user = await prisma.user.findFirst({
@@ -167,7 +187,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user) {
-      // User belum terdaftar — buat akun otomatis
       user = await prisma.user.create({
         data: {
           name: userName,
@@ -176,20 +195,14 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Buat wallet default
       await prisma.wallet.createMany({
-        data: [
-          { userId: user.id, name: "Cash", type: "cash", initialBalance: 0 },
-        ],
+        data: [{ userId: user.id, name: "Cash", type: "cash", initialBalance: 0 }],
       });
-
-      console.log(`👤 User baru terdaftar: ${user.id}`);
     }
 
-    // 3. Proses transaksi
+    // 3. Process transaction & reply
     const resultMessage = await processTransaction(user.id, extracted);
 
-    // 4. Kirim balasan
     if (platform === "telegram") {
       await sendTelegramMessage(chatId, resultMessage);
     } else if (platform === "whatsapp") {
