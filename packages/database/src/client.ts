@@ -5,12 +5,9 @@ import pg from "pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error("DATABASE_URL belum diatur di dalam environment variables.");
-}
-
-const pool = new pg.Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+// Buat pool dan adapter hanya jika DATABASE_URL tersedia (mencegah throw error saat build phase)
+const pool = connectionString ? new pg.Pool({ connectionString }) : undefined;
+const adapter = pool ? new PrismaPg(pool) : undefined;
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -18,8 +15,10 @@ const globalForPrisma = globalThis as unknown as {
 
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-  });
+  new PrismaClient(
+    adapter
+      ? { adapter }
+      : undefined
+  );
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

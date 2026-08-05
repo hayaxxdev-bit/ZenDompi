@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@zendompi/database";
 
+// Mencegah Next.js melakukan static generation/prerender saat build
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/health
  * 
