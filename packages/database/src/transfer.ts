@@ -1,4 +1,4 @@
-import { prisma } from "./client.js";
+import { prisma } from "./client";
 import type { Prisma, Wallet, Transaction, LedgerEntry } from "@prisma/client";
 
 // ─── Type Definitions ──────────────────────────

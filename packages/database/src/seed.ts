@@ -1,7 +1,7 @@
-import { prisma } from "./client.js";
-import { transferBetweenWallets } from "./transfer.js";
-import { createTransaction } from "./transaction.js";
-import { getWalletBalance, getNetWorth } from "./balance.js";
+import { prisma } from "./client";
+import { transferBetweenWallets } from "./transfer";
+import { createTransaction } from "./transaction";
+import { getWalletBalance, getNetWorth } from "./balance";
 
 async function main() {
   console.log("🌱 Seeding database...\n");

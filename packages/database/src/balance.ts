@@ -1,5 +1,5 @@
-import { prisma } from "./client.js";
-import type { Prisma } from "@prisma/client";
+import { prisma } from "./client";
+// import type { Prisma } from "@prisma/client";
 
 /**
  * Menghitung saldo real-time sebuah wallet dari LedgerEntry.
@@ -33,9 +33,9 @@ export async function getWalletBalance(walletId: string): Promise<number> {
   });
 
   const debitSum =
-    breakdown.find((b) => b.accountType === "debit")?._sum.amount?.toNumber() ?? 0;
+    breakdown.find((b: { accountType: string; }) => b.accountType === "debit")?._sum.amount?.toNumber() ?? 0;
   const creditSum =
-    breakdown.find((b) => b.accountType === "credit")?._sum.amount?.toNumber() ?? 0;
+    breakdown.find((b: { accountType: string; }) => b.accountType === "credit")?._sum.amount?.toNumber() ?? 0;
 
   const initialBalance = wallet.initialBalance.toNumber();
 
