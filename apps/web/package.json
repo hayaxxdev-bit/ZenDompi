@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@zendompi/web",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -11,18 +11,33 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@auth/core": "^0.41.3",
+    "@auth/prisma-adapter": "^2.11.3",
     "@repo/ui": "workspace:*",
-    "next": "16.3.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@zendompi/database": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.0",
+    "date-fns": "^4.1.0",
+    "grammy": "^1.45.1",
+    "lucide-react": "^0.460.0",
+    "next": "15.5.22",
+    "next-auth": "5.0.0-beta.32",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "recharts": "^2.15.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@zendompi/typescript-config": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "@zendompi/typescript-config": "workspace:*",
     "eslint": "^9.39.1",
+    "postcss": "^8.5.23",
+    "tailwindcss": "^4.3.3",
     "typescript": "5.9.2"
   }
 }

@@ -6,24 +6,80 @@ datasource db {
   provider = "postgresql"
 }
 
-// ─── CORE USER ─────────────────────────────────
-model User {
-  id          String   @id @default(uuid()) @db.Uuid
-  email       String?  @unique @db.VarChar(255)
-  phoneNumber String?  @unique @db.VarChar(20) @map("phone_number")
-  telegramId  BigInt?  @unique @map("telegram_id")
-  name        String?  @db.VarChar(100)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+// =====================================================================
+// ─── NEXTAUTH MODELS (AUTHENTICATION) ────────────────────────────────
+// =====================================================================
 
-  wallets      Wallet[]
-  categories   Category[]
-  transactions Transaction[]
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String?   @db.VarChar(100)
+  email         String?   @unique @db.VarChar(255)
+  emailVerified DateTime? @map("email_verified") @db.Timestamptz()
+  password      String?   @db.Text // Hashed password untuk credential login
+  image         String?   @db.Text
+  phoneNumber   String?   @unique @map("phone_number") @db.VarChar(20)
+  telegramId    BigInt?   @unique @map("telegram_id")
+  
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relasi NextAuth
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relasi Domain Aplikasi
+  wallets       Wallet[]
+  categories    Category[]
+  transactions  Transaction[]
 
   @@map("users")
 }
 
-// ─── WALLET (MULTI-DOMPET) ─────────────────────
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String  @db.VarChar(50)
+  provider          String  @db.VarChar(50)
+  providerAccountId String  @map("provider_account_id") @db.VarChar(255)
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String? @db.VarChar(50)
+  scope             String? @db.Text
+  id_token          String? @db.Text
+  session_state     String? @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token") @db.Text
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique @db.Text
+  expires    DateTime @db.Timestamptz()
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+
+// =====================================================================
+// ─── DOMAIN MODELS (APP BUSINESS LOGIC) ──────────────────────────────
+// =====================================================================
+
 model Wallet {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @map("user_id") @db.Uuid
@@ -32,18 +88,18 @@ model Wallet {
   currency       String   @default("IDR") @db.Char(3)
   initialBalance Decimal  @default(0.00) @map("initial_balance") @db.Decimal(15, 2)
   isArchived     Boolean  @default(false) @map("is_archived")
+  
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ledgerEntries LedgerEntry[]
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntries  LedgerEntry[]
 
-  @@unique([userId, name]) // Ditambahkan agar wallet.upsert userId_name dapat digunakan
+  @@unique([userId, name])
   @@index([userId])
   @@map("wallets")
 }
 
-// ─── CATEGORY ──────────────────────────────────
 model Category {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
@@ -51,6 +107,7 @@ model Category {
   type      String   @db.VarChar(10) // income, expense, transfer
   icon      String?  @db.VarChar(50)
   parentId  String?  @map("parent_id") @db.Uuid
+  
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -63,7 +120,6 @@ model Category {
   @@map("categories")
 }
 
-// ─── TRANSACTION ───────────────────────────────
 model Transaction {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @map("user_id") @db.Uuid
@@ -72,6 +128,7 @@ model Transaction {
   description     String   @default("") @db.Text
   totalAmount     Decimal  @map("total_amount") @db.Decimal(15, 2)
   transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamptz()
+  
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -82,15 +139,11 @@ model Transaction {
   @@map("transactions")
 }
 
-// ─── DOUBLE-ENTRY LEDGER ──────────────────────
 model LedgerEntry {
   id            String  @id @default(uuid()) @db.Uuid
   transactionId String  @map("transaction_id") @db.Uuid
   walletId      String  @map("wallet_id") @db.Uuid
-  
-  // Change VarChar(5) to VarChar(10)
   accountType   String  @map("account_type") @db.VarChar(10) 
-  
   amount        Decimal @db.Decimal(15, 2)
 
   transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
@@ -100,4 +153,17 @@ model LedgerEntry {
   @@index([transactionId])
   @@index([walletId])
   @@map("ledger_entries")
+}
+
+// ─── LOGIN SESSION ─────────────────────────────
+model LoginSession {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique @db.VarChar(6)
+  telegramId BigInt?  @map("telegram_id")
+  status     String   @default("pending") @db.VarChar(20) // pending, verified, expired
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz()
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@index([code])
+  @@map("login_sessions")
 }

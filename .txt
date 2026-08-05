@@ -1,0 +1,11 @@
+# Cek token valid
+curl "https://api.telegram.org/bot8941751554:AAFchjKT87dEjpIYDs5gynEf_8NjLCGW9aA/getMe"
+
+# Cek ada update pending (untuk clear webhook lama)
+curl "https://api.telegram.org/bot8941751554:AAFchjKT87dEjpIYDs5gynEf_8NjLCGW9aA/getUpdates"
+
+# Delete webhook kalau ada (supaya polling bisa jalan)
+curl "https://api.telegram.org/bot8941751554:AAFchjKT87dEjpIYDs5gynEf_8NjLCGW9aA/deleteWebhook"
+
+# Setelah delete webhook, restart bot polling
+pnpm --filter @zendompi/webhook-bot dev:bot

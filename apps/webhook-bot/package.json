@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
+    "dev:bot": "tsx src/dev-bot.ts",
     "build": "next build",
     "start": "next start"
   },
@@ -16,6 +17,7 @@
     "@upstash/qstash": "^2.11.3",
     "@zendompi/database": "workspace:*",
     "@zendompi/typescript-config": "workspace:*",
+    "dotenv": "^17.4.2",
     "grammy": "^1.45.1",
     "next": "16.3.0",
     "react": "^19.2.0",
@@ -25,6 +27,7 @@
     "@types/node": "^22.15.3",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "tsx": "^4.23.5",
     "typescript": "^5.8.0"
   }
 }

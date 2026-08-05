@@ -1,0 +1,154 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma, getNetWorth, getWalletBalance } from "@zendompi/database";
+
+/**
+ * GET /api/dashboard?userId=xxx
+ * 
+ * Mengembalikan semua data yang dibutuhkan dashboard.
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const searchParams = req.nextUrl.searchParams;
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "userId is required" },
+        { status: 400 }
+      );
+    }
+
+    // ─── 1. Net Worth ────────────────────────
+    const netWorth = await getNetWorth(userId);
+
+    // ─── 2. Wallets with Balance ─────────────
+    const wallets = await prisma.wallet.findMany({
+      where: { userId, isArchived: false },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const walletsWithBalance = await Promise.all(
+      wallets.map(async (wallet) => {
+        const balance = await getWalletBalance(wallet.id);
+        return {
+          id: wallet.id,
+          name: wallet.name,
+          type: wallet.type,
+          balance,
+          percentage: netWorth > 0 ? (balance / netWorth) * 100 : 0,
+        };
+      })
+    );
+
+    // ─── 3. Recent Transactions ──────────────
+    const recentTransactions = await prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: {
+        category: {
+          select: { name: true, icon: true },
+        },
+        ledgerEntries: {
+          include: {
+            wallet: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const transactionItems = recentTransactions.map((tx) => {
+      const firstEntry = tx.ledgerEntries[0];
+      return {
+        id: tx.id,
+        type: tx.type as "income" | "expense" | "transfer",
+        description: tx.description,
+        amount: tx.totalAmount.toNumber(),
+        walletName: firstEntry?.wallet.name,
+        categoryName: tx.category?.name,
+        categoryIcon: tx.category?.icon,
+        date: tx.createdAt.toISOString(),
+      };
+    });
+
+    // ─── 4. Expense by Category (bulan ini) ──
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const expenseTransactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        type: "expense",
+        createdAt: { gte: startOfMonth },
+      },
+      include: {
+        category: { select: { name: true, icon: true } },
+      },
+    });
+
+    // Group by category
+    const categoryMap = new Map<
+      string,
+      { name: string; icon: string; amount: number }
+    >();
+
+    let totalExpense = 0;
+
+    for (const tx of expenseTransactions) {
+      const catName = tx.category?.name || "Lainnya";
+      const catIcon = tx.category?.icon || "📌";
+      const amount = tx.totalAmount.toNumber();
+      totalExpense += amount;
+
+      const existing = categoryMap.get(catName);
+      if (existing) {
+        existing.amount += amount;
+      } else {
+        categoryMap.set(catName, { name: catName, icon: catIcon, amount });
+      }
+    }
+
+    const expenseByCategory = Array.from(categoryMap.values())
+      .map((cat) => ({
+        ...cat,
+        percentage: totalExpense > 0 ? (cat.amount / totalExpense) * 100 : 0,
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
+    // ─── 5. Total Income & Expense (bulan ini) ─
+    const monthlyStats = await prisma.transaction.groupBy({
+      by: ["type"],
+      where: {
+        userId,
+        createdAt: { gte: startOfMonth },
+        type: { in: ["income", "expense"] },
+      },
+      _sum: { totalAmount: true },
+    });
+
+    const totalIncome =
+      monthlyStats
+        .find((s) => s.type === "income")
+        ?._sum.totalAmount?.toNumber() ?? 0;
+    const totalExpenseMonth =
+      monthlyStats
+        .find((s) => s.type === "expense")
+        ?._sum.totalAmount?.toNumber() ?? 0;
+
+    return NextResponse.json({
+      netWorth,
+      totalIncome,
+      totalExpense: totalExpenseMonth,
+      wallets: walletsWithBalance,
+      recentTransactions: transactionItems,
+      expenseByCategory,
+    });
+  } catch (error) {
+    console.error("Dashboard API error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
