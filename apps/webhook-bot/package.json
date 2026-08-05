@@ -1,0 +1,28 @@
+{
+  "name": "@zendompi/webhook-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start"
+  },
+  "keywords": [],
+  "type": "module",
+  "author": "hayaxxdev-bit",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@upstash/qstash": "^2.11.3",
+    "@zendompi/database": "workspace:*",
+    "@zendompi/typescript-config": "workspace:*",
+    "grammy": "^1.45.1",
+    "next": "16.3.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^7.0.2"
+  }
+}

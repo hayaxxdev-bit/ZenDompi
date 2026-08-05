@@ -4,18 +4,17 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─── CORE USER ─────────────────────────────────
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  email        String?   @unique @db.VarChar(255)
-  phoneNumber  String?   @unique @db.VarChar(20) @map("phone_number")
-  telegramId   BigInt?   @unique @map("telegram_id")
-  name         String?   @db.VarChar(100)
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+  id          String   @id @default(uuid()) @db.Uuid
+  email       String?  @unique @db.VarChar(255)
+  phoneNumber String?  @unique @db.VarChar(20) @map("phone_number")
+  telegramId  BigInt?  @unique @map("telegram_id")
+  name        String?  @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   wallets      Wallet[]
   categories   Category[]
@@ -36,26 +35,27 @@ model Wallet {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   ledgerEntries LedgerEntry[]
 
+  @@unique([userId, name]) // Ditambahkan agar wallet.upsert userId_name dapat digunakan
   @@index([userId])
   @@map("wallets")
 }
 
 // ─── CATEGORY ──────────────────────────────────
 model Category {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  name      String    @db.VarChar(50)
-  type      String    @db.VarChar(10) // income, expense, transfer
-  icon      String?   @db.VarChar(50)
-  parentId  String?   @map("parent_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(50)
+  type      String   @db.VarChar(10) // income, expense, transfer
+  icon      String?  @db.VarChar(50)
+  parentId  String?  @map("parent_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children     Category[]  @relation("CategoryHierarchy")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Category[]    @relation("CategoryHierarchy")
   transactions Transaction[]
 
   @@unique([userId, name])
@@ -74,8 +74,8 @@ model Transaction {
   transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamptz()
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   ledgerEntries LedgerEntry[]
 
   @@index([userId, transactionDate(sort: Desc)])
@@ -87,7 +87,10 @@ model LedgerEntry {
   id            String  @id @default(uuid()) @db.Uuid
   transactionId String  @map("transaction_id") @db.Uuid
   walletId      String  @map("wallet_id") @db.Uuid
-  accountType   String  @map("account_type") @db.VarChar(5) // debit or credit
+  
+  // Change VarChar(5) to VarChar(10)
+  accountType   String  @map("account_type") @db.VarChar(10) 
+  
   amount        Decimal @db.Decimal(15, 2)
 
   transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
