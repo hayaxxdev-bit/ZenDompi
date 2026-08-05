@@ -5,9 +5,9 @@
     "outDir": "./dist",
 
     // Environment Settings
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2022",
     "types": ["node"], // <-- Mengaktifkan tipe Node.js untuk process.env & dotenv
 
     // Other Outputs
