@@ -1,31 +1,101 @@
 {
-  "$schema": "https://turborepo.dev/schema.json",
+  "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  
+  // ===========================================================================
+  // 🌍 GLOBAL SETTINGS
+  // ===========================================================================
+  "globalDependencies": [
+    ".env",
+    "pnpm-lock.yaml",
+    "tsconfig.base.json",
+    "pnpm-workspace.yaml"
+  ],
+
   "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_APP_URL",
     "DATABASE_URL",
+    "AUTH_SECRET",
+    "AUTH_URL",
     "GEMINI_API_KEY",
     "QSTASH_TOKEN",
-    "QSTASH_URL"
+    "QSTASH_URL",
+    "TELEGRAM_BOT_TOKEN",
+    "WHATSAPP_TOKEN"
   ],
+
+  // ===========================================================================
+  // 🚀 TASKS (PIPELINE)
+  // ===========================================================================
   "tasks": {
+    // -------------------------------------------------------------------------
+    // 🗄️ DATABASE & ORM
+    // -------------------------------------------------------------------------
     "db:generate": {
       "cache": false,
-      "outputs": ["node_modules/@prisma/client/**"]
+      "outputs": ["node_modules/@prisma/client/**", "packages/database/dist/**"]
     },
+    "db:push": {
+      "cache": false,
+      "interactive": true 
+    },
+
+    // -------------------------------------------------------------------------
+    // 🏗️ BUILD PROCESS
+    // -------------------------------------------------------------------------
     "build": {
-      "dependsOn": ["^db:generate", "^build"],
+      "dependsOn": ["^build", "^db:generate"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**",
+        "build/**"
+      ]
     },
+
+    // -------------------------------------------------------------------------
+    // ✨ LINTING & FORMATTING
+    // -------------------------------------------------------------------------
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint", "^db:generate"],
+      "outputs": []
     },
+    "format": {
+      "outputs": [] 
+    },
+
+    // -------------------------------------------------------------------------
+    // 🛡️ TYPE CHECKING (TypeScript)
+    // -------------------------------------------------------------------------
     "check-types": {
-      "dependsOn": ["^db:generate", "^check-types"]
+      "dependsOn": ["^check-types", "^db:generate"],
+      "outputs": []
     },
+
+    // -------------------------------------------------------------------------
+    // 🧪 TESTING
+    // -------------------------------------------------------------------------
+    "test": {
+      "dependsOn": ["^test", "^db:generate"],
+      "outputs": ["coverage/**"]
+    },
+
+    // -------------------------------------------------------------------------
+    // 💻 DEVELOPMENT (Local Server)
+    // -------------------------------------------------------------------------
     "dev": {
+      "dependsOn": ["^db:generate"],
       "cache": false,
       "persistent": true
+    },
+
+    // -------------------------------------------------------------------------
+    // 🧹 CLEANUP
+    // -------------------------------------------------------------------------
+    "clean": {
+      "cache": false
     }
   }
 }

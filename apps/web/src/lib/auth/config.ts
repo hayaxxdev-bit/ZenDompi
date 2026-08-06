@@ -230,22 +230,52 @@ export const authConfig: NextAuthConfig = {
   ],
 
   callbacks: {
+    authorized({ auth, request }) {
+      const pathname = request.nextUrl.pathname;
+
+      const publicRoutes = [
+        "/login",
+        "/register",
+        "/api/auth",
+        "/api/webhook",
+        "/api/health",
+      ];
+
+      if (
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/favicon") ||
+        pathname.includes(".")
+      ) {
+        return true;
+      }
+
+      if (publicRoutes.some((route) => pathname.startsWith(route))) {
+        return true;
+      }
+
+      return !!auth;
+    },
+
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id as string;
-        token.telegramId = (user as any).telegramId as number | undefined;
+        token.id = user.id;
+        token.telegramId = (user as any).telegramId;
+        token.phoneNumber = (user as any).phoneNumber;
       }
+
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as any).telegramId = token.telegramId;
+        (session.user as any).phoneNumber = token.phoneNumber;
       }
+
       return session;
     },
   },
-
   secret: process.env.AUTH_SECRET,
   trustHost: true,
 };

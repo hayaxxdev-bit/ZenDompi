@@ -19,6 +19,12 @@ model User {
   image         String?   @db.Text
   phoneNumber   String?   @unique @map("phone_number") @db.VarChar(20)
   telegramId    BigInt?   @unique @map("telegram_id")
+  whatsappNumber String? @unique @map("whatsapp_number") @db.VarChar(20)
+  preferredCurrency String @default("IDR") @map("preferred_currency") @db.Char(3)
+  locale            String @default("id") @db.VarChar(10)
+  timezone          String @default("Asia/Jakarta") @db.VarChar(50)
+
+  chatMessages ChatMessage[]
   
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -88,6 +94,9 @@ model Wallet {
   currency       String   @default("IDR") @db.Char(3)
   initialBalance Decimal  @default(0.00) @map("initial_balance") @db.Decimal(15, 2)
   isArchived     Boolean  @default(false) @map("is_archived")
+  icon      String? @db.VarChar(100)
+  color     String? @db.VarChar(20)
+  sortOrder Int     @default(0)
   
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
@@ -106,6 +115,7 @@ model Category {
   name      String   @db.VarChar(50)
   type      String   @db.VarChar(10) // income, expense, transfer
   icon      String?  @db.VarChar(50)
+  budget Decimal? @db.Decimal(15,2)
   parentId  String?  @map("parent_id") @db.Uuid
   
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
@@ -128,6 +138,16 @@ model Transaction {
   description     String   @default("") @db.Text
   totalAmount     Decimal  @map("total_amount") @db.Decimal(15, 2)
   transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamptz()
+  source String @default("manual") @db.VarChar(20)
+  // manual
+  // telegram
+  // whatsapp
+  // import
+  // api
+
+  externalId String? @map("external_id") @db.VarChar(255)
+  note String? @db.Tex
+  attachments Attachment[]
   
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
@@ -144,8 +164,8 @@ model LedgerEntry {
   transactionId String  @map("transaction_id") @db.Uuid
   walletId      String  @map("wallet_id") @db.Uuid
   accountType   String  @map("account_type") @db.VarChar(10) 
+  memo String? @db.Text
   amount        Decimal @db.Decimal(15, 2)
-
   transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Restrict)
 
@@ -162,8 +182,69 @@ model LoginSession {
   telegramId BigInt?  @map("telegram_id")
   status     String   @default("pending") @db.VarChar(20) // pending, verified, expired
   expiresAt  DateTime @map("expires_at") @db.Timestamptz()
+  provider String @default("telegram") @db.VarChar(20)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   @@index([code])
   @@map("login_sessions")
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  platform   String   @db.VarChar(20)
+  messageId  String   @map("message_id") @db.VarChar(255)
+  senderId   String?  @map("sender_id") @db.VarChar(255)
+  chatId     String?  @map("chat_id") @db.VarChar(255)
+  text       String   @db.Text
+  raw        Json?
+
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([platform, messageId])
+  @@index([userId])
+  @@map("chat_messages")
+}
+
+model ParsedMessage {
+  id String @id @default(uuid()) @db.Uuid
+  chatMessageId String @unique @map("chat_message_id") @db.Uuid
+  success Boolean @default(false)
+  confidence Float @default(0)
+  raw Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  chatMessage ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
+  @@map("parsed_messages")
+}
+
+model Attachment {
+  id String @id @default(uuid()) @db.Uuid
+  transactionId String @map("transaction_id") @db.Uuid
+  type String @db.VarChar(20)
+  url String @db.Text
+  fileName String? @map("file_name") @db.VarChar(255)
+  mimeType String? @map("mime_type") @db.VarChar(100)
+  size Int?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@map("attachments")
+}
+
+model EventLog {
+  id String @id @default(uuid()) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  type String @db.VarChar(50)
+  source String @db.VarChar(30)
+  payload Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+  
+  @@index([userId])
+  @@index([type])
+  @@map("event_logs")
 }

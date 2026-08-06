@@ -180,18 +180,14 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // FIX: pakai telegramId (state), bukan data.telegramId
       const result = await signIn("telegram-otp", {
-        telegramId: telegramId, // ← FIX: state, bukan data.telegramId
-        otp: otp, // ← FIX: state otp, bukan loginCode
+        telegramId: telegramId,
+        otp: loginCodeRef.current,
         redirect: false,
-        callbackUrl,
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else if (result?.ok) {
-        router.push(callbackUrl);
+      if (result?.ok) {
+        router.replace("/");
         router.refresh();
       }
     } catch {

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "ZenDompi Base TypeScript Config",
+  "compilerOptions": {
+    // =========================================================================
+    // 🎯 TARGET & ENVIRONMENT
+    // =========================================================================
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+
+    // =========================================================================
+    // 📦 MODULES & RESOLUTION (Optimal untuk Bundler Modern & Next.js)
+    // =========================================================================
+    "module": "ESNext",
+    // Gunakan 'Bundler' untuk Vite/Next.js (Untuk backend murni Node.js bisa override ke 'NodeNext')
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+
+    // =========================================================================
+    // 🛡️ STRICT TYPE-CHECKING (Keamanan Maksimal)
+    // =========================================================================
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    // Mencegah error saat mengakses array index yang tidak ada [1]
+    "noUncheckedIndexedAccess": true,
+    // Mencegah nilai undefined tak terduga pada optional object
+    "exactOptionalPropertyTypes": true,
+
+    // =========================================================================
+    // ✨ CODE QUALITY & LINTER RULES (Bawaan TypeScript)
+    // =========================================================================
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    // Fitur baru TS 5.x: Peringatan jika import efek samping tidak diperiksa
+    "noUncheckedSideEffectImports": true,
+    // Memaksa penggunaan 'import type' untuk performa bundler yang lebih baik
+    "verbatimModuleSyntax": true,
+
+    // =========================================================================
+    // 🛠️ EMIT & BUILD OUTPUT
+    // =========================================================================
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "removeComments": false,
+    
+    // Aktifkan jika menggunakan TypeScript Project References (Monorepo khusus)
+    // "composite": true, 
+
+    // =========================================================================
+    // 🔗 INTEROP & COMPATIBILITY
+    // =========================================================================
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    // Menghemat waktu build dengan tidak mengecek ulang file library (.d.ts) di node_modules
+    "skipLibCheck": true,
+
+    // =========================================================================
+    // 🗺️ PATH ALIASES (Opsional - sesuaikan dengan struktur folder)
+    // =========================================================================
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  
+  // ===========================================================================
+  // 🛑 EXCLUDE (Jangan proses folder ini untuk menghemat memori)
+  // ===========================================================================
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    ".turbo",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}

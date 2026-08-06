@@ -1,3 +1,28 @@
+# ==============================================================================
+# 📦 WORKSPACE PACKAGES
+# ==============================================================================
 packages:
   - "apps/*"
   - "packages/*"
+  - "docs/*"
+
+  - "!**/node_modules"
+  - "!**/dist"
+  - "!**/.next"
+  - "!**/build"
+
+catalog:
+  react: "^18.3.1"
+  react-dom: "^18.3.1"
+  typescript: "5.9.2"
+  "@types/react": "^18.3.3"
+  "@types/node": "^20.14.9"
+
+# Kamu juga bisa membuat katalog khusus (misal khusus untuk styling UI)
+# Cara pakainya: "lucide-react": "catalog:ui"
+catalogs:
+  ui:
+    lucide-react: "^0.400.0"
+    clsx: "^2.1.1"
+    tailwind-merge: "^2.3.0"
+    framer-motion: "^11.2.10"

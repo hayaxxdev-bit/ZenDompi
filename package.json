@@ -1,20 +1,59 @@
 {
   "name": "ZenDompi",
+  "version": "1.0.0",
   "private": true,
+  "description": "ZenDompi Monorepo Project",
+  "author": "hayaxxdev-bit",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hayaxxdev-bit/ZenDompi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hayaxxdev-bit/ZenDompi/issues"
+  },
+  "homepage": "https://github.com/hayaxxdev-bit/ZenDompi#readme",
   "scripts": {
-    "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter @zendompi/web",
+    "dev:api": "turbo run dev --filter @zendompi/api",
+    "build": "turbo run build",
+    "build:web": "turbo run build --filter @zendompi/web",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "lint:fix": "turbo run lint -- --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,css,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,css,yaml}\"",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rimraf node_modules",
+    "prepare": "husky",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
     "prettier": "^3.7.4",
+    "rimraf": "^5.0.7",
     "turbo": "^2.10.8",
     "typescript": "5.9.2"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=18",
+    "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{md,json,css,yaml}": [
+      "prettier --write"
+    ]
   }
 }
