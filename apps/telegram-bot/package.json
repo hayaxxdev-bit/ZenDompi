@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx src/index.ts",
+    "build": "tsx",
     "start": "tsx src/index.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/"

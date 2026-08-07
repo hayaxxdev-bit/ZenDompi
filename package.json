@@ -17,6 +17,7 @@
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter @zendompi/web",
     "dev:api": "turbo run dev --filter @zendompi/api",
+    "postinstall": "pnpm --filter @zendompi/database exec prisma generate",
     "build": "turbo run build",
     "build:web": "turbo run build --filter @zendompi/web",
     "lint": "turbo run lint",

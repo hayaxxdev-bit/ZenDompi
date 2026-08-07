@@ -1,16 +1,21 @@
 import "dotenv/config";
-import { bootstrap } from "./bootstrap";
+import { Bot } from "grammy"; // Atau 'telegraf' / 'node-telegram-bot-api' sesuaikan dengan library Anda
+import { webhookCallback } from "grammy";
 
-async function main() {
-  const bot = await bootstrap();
+export const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || "");
 
-  // Start bot (long polling untuk development)
+// Inisialisasi EventBus & Handler Bot Anda di sini
+bot.command("start", (ctx) => ctx.reply("Bot Aktif!"));
+
+// Mode 1: LOKAL DEVELOPMENT (Long Polling)
+if (process.env.NODE_ENV !== "production") {
   bot.start({
-    onStart: (botInfo: { username: any; }) => {
-      console.log(`🤖 @${botInfo.username} is running...`);
-      console.log("⌨️  Press Ctrl+C to stop\n");
+    onStart: () => {
+      console.log("[Subscriber] TransactionCreated → Telegram notification");
+      console.log("✅ Telegram bot siap (Mode Dev / Long Polling)!");
     },
   });
 }
 
-main().catch(console.error);
+// Mode 2: VERCEL PRODUCTION (Webhook Handler)
+export default webhookCallback(bot, "std/http");

@@ -1,217 +1,217 @@
-import { NextRequest, NextResponse } from "next/server";
-import { 
-  extractTransactionFromChat, 
-  extractWithRegex, 
-  type ExtractedTransaction 
-} from "@/lib/gemini";
-import { sendTelegramMessage } from "@/lib/telegram";
-import { sendWhatsAppMessage } from "@/lib/whatsapp";
-import {
-  prisma,
-  transferBetweenWallets,
-  createTransaction,
-} from "@zendompi/database";
+// import { NextRequest, NextResponse } from "next/server";
+// import { 
+//   extractTransactionFromChat, 
+//   extractWithRegex, 
+//   type ExtractedTransaction 
+// } from "@/lib/gemini";
+// import { sendTelegramMessage } from "@/lib/telegram";
+// import { sendWhatsAppMessage } from "@/lib/whatsapp";
+// import {
+//   prisma,
+//   transferBetweenWallets,
+//   createTransaction,
+// } from "@zendompi/database";
 
-// ─── Wallet Name → ID Mapping ──────────────────
-async function findWalletId(
-  userId: string,
-  walletName: string,
-): Promise<string | null> {
-  const wallet = await prisma.wallet.findFirst({
-    where: {
-      userId,
-      name: { contains: walletName, mode: "insensitive" },
-      isArchived: false,
-    },
-  });
+// // ─── Wallet Name → ID Mapping ──────────────────
+// async function findWalletId(
+//   userId: string,
+//   walletName: string,
+// ): Promise<string | null> {
+//   const wallet = await prisma.wallet.findFirst({
+//     where: {
+//       userId,
+//       name: { contains: walletName, mode: "insensitive" },
+//       isArchived: false,
+//     },
+//   });
 
-  return wallet?.id ?? null;
-}
+//   return wallet?.id ?? null;
+// }
 
-// ─── Kategori Name → ID Mapping ────────────────
-async function findCategoryId(
-  userId: string,
-  categoryName: string,
-): Promise<string | null> {
-  const category = await prisma.category.findFirst({
-    where: {
-      userId,
-      name: { contains: categoryName, mode: "insensitive" },
-    },
-  });
+// // ─── Kategori Name → ID Mapping ────────────────
+// async function findCategoryId(
+//   userId: string,
+//   categoryName: string,
+// ): Promise<string | null> {
+//   const category = await prisma.category.findFirst({
+//     where: {
+//       userId,
+//       name: { contains: categoryName, mode: "insensitive" },
+//     },
+//   });
 
-  return category?.id ?? null;
-}
+//   return category?.id ?? null;
+// }
 
-// ─── Format Rupiah ─────────────────────────────
-function formatRupiah(amount: number): string {
-  return `Rp ${amount.toLocaleString("id-ID")}`;
-}
+// // ─── Format Rupiah ─────────────────────────────
+// function formatRupiah(amount: number): string {
+//   return `Rp ${amount.toLocaleString("id-ID")}`;
+// }
 
-// ─── Proses Transaksi ──────────────────────────
-async function processTransaction(
-  userId: string,
-  extracted: ExtractedTransaction,
-): Promise<string> {
-  try {
-    switch (extracted.type) {
-      case "transfer": {
-        if (!extracted.fromWallet || !extracted.toWallet) {
-          return "❌ Transfer butuh wallet sumber dan tujuan. Contoh: Top up OVO 50rb dari BCA";
-        }
+// // ─── Proses Transaksi ──────────────────────────
+// async function processTransaction(
+//   userId: string,
+//   extracted: ExtractedTransaction,
+// ): Promise<string> {
+//   try {
+//     switch (extracted.type) {
+//       case "transfer": {
+//         if (!extracted.fromWallet || !extracted.toWallet) {
+//           return "❌ Transfer butuh wallet sumber dan tujuan. Contoh: Top up OVO 50rb dari BCA";
+//         }
 
-        const fromId = await findWalletId(userId, extracted.fromWallet);
-        const toId = await findWalletId(userId, extracted.toWallet);
+//         const fromId = await findWalletId(userId, extracted.fromWallet);
+//         const toId = await findWalletId(userId, extracted.toWallet);
 
-        if (!fromId)
-          return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
-        if (!toId) return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
+//         if (!fromId)
+//           return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
+//         if (!toId) return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
 
-        const categoryId = extracted.category
-          ? (await findCategoryId(userId, extracted.category)) ?? undefined
-          : undefined;
+//         const categoryId = extracted.category
+//           ? (await findCategoryId(userId, extracted.category)) ?? undefined
+//           : undefined;
 
-        await transferBetweenWallets({
-          userId,
-          fromWalletId: fromId,
-          toWalletId: toId,
-          amount: extracted.amount,
-          description: extracted.description || "",
-          ...(categoryId && { categoryId }),
-        });
+//         await transferBetweenWallets({
+//           userId,
+//           fromWalletId: fromId,
+//           toWalletId: toId,
+//           amount: extracted.amount,
+//           description: extracted.description || "",
+//           ...(categoryId && { categoryId }),
+//         });
 
-        return `✅ Transfer berhasil!\n📤 ${extracted.fromWallet} → 📥 ${extracted.toWallet}\n💵 ${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
-      }
+//         return `✅ Transfer berhasil!\n📤 ${extracted.fromWallet} → 📥 ${extracted.toWallet}\n💵 ${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
+//       }
 
-      case "expense": {
-        if (!extracted.fromWallet) {
-          return "❌ Pengeluaran butuh wallet sumber. Contoh: Makan 25rb pake GoPay";
-        }
+//       case "expense": {
+//         if (!extracted.fromWallet) {
+//           return "❌ Pengeluaran butuh wallet sumber. Contoh: Makan 25rb pake GoPay";
+//         }
 
-        const walletId = await findWalletId(userId, extracted.fromWallet);
-        if (!walletId)
-          return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
+//         const walletId = await findWalletId(userId, extracted.fromWallet);
+//         if (!walletId)
+//           return `❌ Wallet "${extracted.fromWallet}" tidak ditemukan`;
 
-        const categoryId = extracted.category
-          ? (await findCategoryId(userId, extracted.category)) ?? undefined
-          : undefined;
+//         const categoryId = extracted.category
+//           ? (await findCategoryId(userId, extracted.category)) ?? undefined
+//           : undefined;
 
-        await createTransaction({
-          userId,
-          walletId,
-          type: "expense",
-          amount: extracted.amount,
-          description: extracted.description || "",
-          ...(categoryId && { categoryId }),
-        });
+//         await createTransaction({
+//           userId,
+//           walletId,
+//           type: "EXPENSE",
+//           amount: extracted.amount,
+//           description: extracted.description || "",
+//           ...(categoryId && { categoryId }),
+//         });
 
-        return `✅ Pengeluaran dicatat!\n📤 ${extracted.fromWallet}\n💵 -${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
-      }
+//         return `✅ Pengeluaran dicatat!\n📤 ${extracted.fromWallet}\n💵 -${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
+//       }
 
-      case "income": {
-        if (!extracted.toWallet) {
-          return "❌ Pemasukan butuh wallet tujuan. Contoh: Gaji 5jt masuk BCA";
-        }
+//       case "income": {
+//         if (!extracted.toWallet) {
+//           return "❌ Pemasukan butuh wallet tujuan. Contoh: Gaji 5jt masuk BCA";
+//         }
 
-        const walletId = await findWalletId(userId, extracted.toWallet);
-        if (!walletId)
-          return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
+//         const walletId = await findWalletId(userId, extracted.toWallet);
+//         if (!walletId)
+//           return `❌ Wallet "${extracted.toWallet}" tidak ditemukan`;
 
-        const categoryId = extracted.category
-          ? (await findCategoryId(userId, extracted.category)) ?? undefined
-          : undefined;
+//         const categoryId = extracted.category
+//           ? (await findCategoryId(userId, extracted.category)) ?? undefined
+//           : undefined;
 
-        await createTransaction({
-          userId,
-          walletId,
-          type: "income",
-          amount: extracted.amount,
-          description: extracted.description || "",
-          ...(categoryId && { categoryId }),
-        });
+//         await createTransaction({
+//           userId,
+//           walletId,
+//           type: "INCOME",
+//           amount: extracted.amount,
+//           description: extracted.description || "",
+//           ...(categoryId && { categoryId }),
+//         });
 
-        return `✅ Pemasukan dicatat!\n📥 ${extracted.toWallet}\n💵 +${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
-      }
+//         return `✅ Pemasukan dicatat!\n📥 ${extracted.toWallet}\n💵 +${formatRupiah(extracted.amount)}\n📝 ${extracted.description}`;
+//       }
 
-      default:
-        return "❌ Tipe transaksi tidak dikenali";
-    }
-  } catch (error: any) {
-    console.error("Process transaction error:", error);
-    return `❌ Gagal: ${error.message || "Terjadi kesalahan"}`;
-  }
-}
+//       default:
+//         return "❌ Tipe transaksi tidak dikenali";
+//     }
+//   } catch (error: any) {
+//     console.error("Process transaction error:", error);
+//     return `❌ Gagal: ${error.message || "Terjadi kesalahan"}`;
+//   }
+// }
 
-// ─── MAIN HANDLER ──────────────────────────────
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { platform, chatId, message, userName } = body;
+// // ─── MAIN HANDLER ──────────────────────────────
+// export async function POST(req: NextRequest) {
+//   try {
+//     const body = await req.json();
+//     const { platform, chatId, message, userName } = body;
 
-    console.log(`📩 [${platform}] ${userName}: ${message}`);
+//     console.log(`📩 [${platform}] ${userName}: ${message}`);
 
-    // 1. Try Gemini extraction, fallback to regex
-    let extracted: ExtractedTransaction | null = await extractTransactionFromChat(message);
+//     // 1. Try Gemini extraction, fallback to regex
+//     let extracted: ExtractedTransaction | null = await extractTransactionFromChat(message);
 
-    if (!extracted) {
-      console.log("⚠️ Gemini failed, trying regex fallback...");
-      extracted = extractWithRegex(message);
-    }
+//     if (!extracted) {
+//       console.log("⚠️ Gemini failed, trying regex fallback...");
+//       extracted = extractWithRegex(message);
+//     }
 
-    if (!extracted) {
-      const errorMsg =
-        "❌ Maaf, saya tidak bisa memahami transaksi kamu.\n\n" +
-        "Coba tulis dengan format:\n" +
-        "📤 <b>Pengeluaran:</b> Makan 25rb pake GoPay\n" +
-        "📥 <b>Pemasukan:</b> Gaji 5jt masuk BCA\n" +
-        "🔄 <b>Transfer:</b> Top up OVO 50rb dari BCA";
+//     if (!extracted) {
+//       const errorMsg =
+//         "❌ Maaf, saya tidak bisa memahami transaksi kamu.\n\n" +
+//         "Coba tulis dengan format:\n" +
+//         "📤 <b>Pengeluaran:</b> Makan 25rb pake GoPay\n" +
+//         "📥 <b>Pemasukan:</b> Gaji 5jt masuk BCA\n" +
+//         "🔄 <b>Transfer:</b> Top up OVO 50rb dari BCA";
 
-      if (platform === "telegram") await sendTelegramMessage(chatId, errorMsg);
-      else if (platform === "whatsapp") await sendWhatsAppMessage(chatId, errorMsg);
+//       if (platform === "telegram") await sendTelegramMessage(chatId, errorMsg);
+//       else if (platform === "whatsapp") await sendWhatsAppMessage(chatId, errorMsg);
 
-      return NextResponse.json({ ok: true });
-    }
+//       return NextResponse.json({ ok: true });
+//     }
 
-    console.log("🤖 Extracted:", JSON.stringify(extracted, null, 2));
+//     console.log("🤖 Extracted:", JSON.stringify(extracted, null, 2));
 
-    // 2. Find/create user logic...
-    let user;
-    if (platform === "telegram") {
-      user = await prisma.user.findFirst({
-        where: { telegramId: BigInt(chatId) },
-      });
-    } else if (platform === "whatsapp") {
-      user = await prisma.user.findFirst({
-        where: { phoneNumber: chatId },
-      });
-    }
+//     // 2. Find/create user logic...
+//     let user;
+//     if (platform === "telegram") {
+//       user = await prisma.user.findFirst({
+//         where: { telegramId: BigInt(chatId) },
+//       });
+//     } else if (platform === "whatsapp") {
+//       user = await prisma.user.findFirst({
+//         where: { phoneNumber: chatId },
+//       });
+//     }
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          name: userName,
-          ...(platform === "telegram" ? { telegramId: BigInt(chatId) } : {}),
-          ...(platform === "whatsapp" ? { phoneNumber: chatId } : {}),
-        },
-      });
+//     if (!user) {
+//       user = await prisma.user.create({
+//         data: {
+//           name: userName,
+//           ...(platform === "telegram" ? { telegramId: BigInt(chatId) } : {}),
+//           ...(platform === "whatsapp" ? { phoneNumber: chatId } : {}),
+//         },
+//       });
 
-      await prisma.wallet.createMany({
-        data: [{ userId: user.id, name: "Cash", type: "cash", initialBalance: 0 }],
-      });
-    }
+//       await prisma.wallet.createMany({
+//         data: [{ userId: user.id, name: "Cash", type: "cash", initialBalance: 0 }],
+//       });
+//     }
 
-    // 3. Process transaction & reply
-    const resultMessage = await processTransaction(user.id, extracted);
+//     // 3. Process transaction & reply
+//     const resultMessage = await processTransaction(user.id, extracted);
 
-    if (platform === "telegram") {
-      await sendTelegramMessage(chatId, resultMessage);
-    } else if (platform === "whatsapp") {
-      await sendWhatsAppMessage(chatId, resultMessage);
-    }
+//     if (platform === "telegram") {
+//       await sendTelegramMessage(chatId, resultMessage);
+//     } else if (platform === "whatsapp") {
+//       await sendWhatsAppMessage(chatId, resultMessage);
+//     }
 
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("Process endpoint error:", error);
-    return NextResponse.json({ ok: false }, { status: 500 });
-  }
-}
+//     return NextResponse.json({ ok: true });
+//   } catch (error) {
+//     console.error("Process endpoint error:", error);
+//     return NextResponse.json({ ok: false }, { status: 500 });
+//   }
+// }

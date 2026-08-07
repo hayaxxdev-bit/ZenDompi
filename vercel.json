@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter @zendompi/telegram-bot build",
+  "outputDirectory": "apps/telegram-bot/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/apps/telegram-bot/api/index"
+    }
+  ]
+}
