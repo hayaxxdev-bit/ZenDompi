@@ -1,0 +1,30 @@
+{
+  "name": "@zendompi/events",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Event bus and domain events for ZenDompi",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./bus": "./src/bus/index.ts",
+    "./transaction": "./src/transaction/index.ts",
+    "./wallet": "./src/wallet/index.ts",
+    "./transfer": "./src/transfer/index.ts",
+    "./category": "./src/category/index.ts",
+    "./auth": "./src/auth/index.ts",
+    "./chat": "./src/chat/index.ts",
+    "./notification": "./src/notification/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@zendompi/typescript-config": "workspace:*",
+    "@zendompi/eslint-config": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}
