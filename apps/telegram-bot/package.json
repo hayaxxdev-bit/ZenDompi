@@ -1,0 +1,26 @@
+{
+  "name": "@zendompi/telegram-bot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@zendompi/adapter-telegram": "workspace:*",
+    "@zendompi/database": "workspace:*",
+    "@zendompi/core": "workspace:*",
+    "@zendompi/events": "workspace:*",
+    "@zendompi/shared": "workspace:*",
+    "@zendompi/typescript-config": "workspace:*",
+    "dotenv": "^16.4.0",
+    "grammy": "^1.45.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
