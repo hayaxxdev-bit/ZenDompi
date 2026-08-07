@@ -13,15 +13,15 @@ config(); // Fallback ke .env biasa jika ada
 
 import { Bot } from "grammy";
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const telegram_BOT_TOKEN = process.env.telegram_BOT_TOKEN;
 
-if (!TELEGRAM_BOT_TOKEN) {
-  console.error("❌ TELEGRAM_BOT_TOKEN tidak ditemukan!");
+if (!telegram_BOT_TOKEN) {
+  console.error("❌ telegram_BOT_TOKEN tidak ditemukan!");
   console.error("Pastikan sudah di-set di apps/webhook-bot/.env.local");
   process.exit(1);
 }
 
-const bot = new Bot(TELEGRAM_BOT_TOKEN);
+const bot = new Bot(telegram_BOT_TOKEN);
 
 // ─── Command Handlers ──────────────────────────
 
@@ -152,7 +152,7 @@ async function startBot() {
   }
 
   console.log("🤖 Starting ZenDompi Bot (Development Mode)...");
-  console.log(`Token: ${TELEGRAM_BOT_TOKEN!.slice(0, 10)}...`);
+  console.log(`Token: ${telegram_BOT_TOKEN!.slice(0, 10)}...`);
 
   bot.start({
     onStart: (botInfo) => {
