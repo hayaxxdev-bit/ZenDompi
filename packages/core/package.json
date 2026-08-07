@@ -1,0 +1,34 @@
+{
+  "name": "@zendompi/core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Business logic layer for ZenDompi",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./transaction": "./src/transaction/index.ts",
+    "./wallet": "./src/wallet/index.ts",
+    "./transfer": "./src/transfer/index.ts",
+    "./dashboard": "./src/dashboard/index.ts",
+    "./category": "./src/category/index.ts",
+    "./statistics": "./src/statistics/index.ts",
+    "./chat": "./src/chat/index.ts",
+    "./notification": "./src/notification/index.ts",
+    "./errors": "./src/errors/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@zendompi/shared": "workspace:*",
+    "@zendompi/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@zendompi/typescript-config": "workspace:*",
+    "@zendompi/eslint-config": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}
