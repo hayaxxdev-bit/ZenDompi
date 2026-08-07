@@ -1,5 +1,5 @@
 {
-  "name": "ZenDompi",
+  "name": "zendompi",
   "version": "1.0.0",
   "private": true,
   "description": "ZenDompi Monorepo Project",
@@ -20,9 +20,8 @@
     "build": "turbo run build",
     "build:web": "turbo run build --filter @zendompi/web",
     "lint": "turbo run lint",
-    "lint:fix": "turbo run lint -- --fix",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,md,json,css,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,md,json,css,yaml}\"",
+    "lint:fix": "turbo run lint:fix",
+    "format": "turbo run format",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "clean": "turbo run clean && rimraf node_modules",
@@ -32,12 +31,12 @@
     "release": "changeset publish"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@changesets/cli": "^2.27.1",
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.7",
-    "prettier": "^3.7.4",
     "rimraf": "^5.0.7",
     "turbo": "^2.10.8",
     "typescript": "5.9.2"
@@ -48,12 +47,8 @@
     "pnpm": ">=9.0.0"
   },
   "lint-staged": {
-    "**/*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "**/*.{md,json,css,yaml}": [
-      "prettier --write"
+    "*.{ts,tsx,js,jsx,json,css,md}": [
+      "pnpm biome check --write --no-errors-on-unmatched"
     ]
   }
 }

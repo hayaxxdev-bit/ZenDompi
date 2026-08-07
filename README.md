@@ -215,8 +215,8 @@ OPENAI_API_KEY="sk-proj-..."
 GEMINI_API_KEY="AIzaSy..."
 
 # Bot Integration Secrets
-TELEGRAM_BOT_TOKEN="123456789:ABCdefGhI..."
-WHATSAPP_API_TOKEN="EAAG..."
+telegram_BOT_TOKEN="123456789:ABCdefGhI..."
+whatsapp_API_TOKEN="EAAG..."
 WEBHOOK_VERIFY_TOKEN="secure_random_string_here"
 
 # Authentication
