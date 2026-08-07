@@ -1,0 +1,27 @@
+{
+  "name": "@zendompi/parser",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Natural language parser for financial transactions",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@zendompi/shared": "workspace:*",
+    "@zendompi/adapter-telegram": "workspace:*",
+    "@zendompi/ai": "workspace:*"
+  },
+  "devDependencies": {
+    "@zendompi/typescript-config": "workspace:*",
+    "@zendompi/eslint-config": "workspace:*",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  }
+}

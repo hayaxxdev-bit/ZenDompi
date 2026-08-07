@@ -1,0 +1,1 @@
+export { extractTransaction } from "./transaction.extractor";

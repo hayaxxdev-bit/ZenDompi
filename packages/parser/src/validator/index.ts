@@ -1,0 +1,1 @@
+export { validateExtractedTransaction } from "./transaction.validator";
