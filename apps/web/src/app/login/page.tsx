@@ -132,7 +132,7 @@ export default function LoginPage() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  // ─── METHOD 2: TELEGRAM ID + OTP ──────────────
+  // ─── METHOD 2: telegram ID + OTP ──────────────
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault();

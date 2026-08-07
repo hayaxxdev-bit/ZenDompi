@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Terjadi kesalahan server. Pastikan TELEGRAM_BOT_TOKEN sudah benar di .env.local",
+          "Terjadi kesalahan server. Pastikan telegram_BOT_TOKEN sudah benar di .env.local",
       },
       { status: 500 }
     );

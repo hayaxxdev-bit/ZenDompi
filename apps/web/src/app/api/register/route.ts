@@ -55,14 +55,14 @@ export async function POST(req: NextRequest) {
     await storeOTP(phoneNumber, otp);
 
     // Kirim OTP via WhatsApp (atau log di dev)
-    if (process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+    if (process.env.whatsapp_TOKEN && process.env.whatsapp_PHONE_NUMBER_ID) {
       try {
         await fetch(
-          `https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+          `https://graph.facebook.com/v21.0/${process.env.whatsapp_PHONE_NUMBER_ID}/messages`,
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+              Authorization: `Bearer ${process.env.whatsapp_TOKEN}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({

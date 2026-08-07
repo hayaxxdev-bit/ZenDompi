@@ -5,9 +5,9 @@ let botInstance: Bot | null = null;
 
 export function getBot(): Bot {
   if (!botInstance) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const token = process.env.telegram_BOT_TOKEN;
     if (!token) {
-      throw new Error("TELEGRAM_BOT_TOKEN is not set");
+      throw new Error("telegram_BOT_TOKEN is not set");
     }
     botInstance = new Bot(token);
   }
