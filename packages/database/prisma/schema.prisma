@@ -1,128 +1,75 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
+// ─── Datasource ─────────────────────────────────
 datasource db {
   provider = "postgresql"
 }
 
-// =====================================================================
-// ─── NEXTAUTH MODELS (AUTHENTICATION) ────────────────────────────────
-// =====================================================================
+// ─── Generator ──────────────────────────────────
+generator client {
+  provider = "prisma-client-js"
+}
 
+// ─── Enums ──────────────────────────────────────
+enum Role {
+  USER
+  ADMIN
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+// ─── User ───────────────────────────────────────
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  name          String?   @db.VarChar(100)
-  email         String?   @unique @db.VarChar(255)
-  emailVerified DateTime? @map("email_verified") @db.Timestamptz()
-  password      String?   @db.Text // Hashed password untuk credential login
-  image         String?   @db.Text
-  phoneNumber   String?   @unique @map("phone_number") @db.VarChar(20)
-  telegramId    BigInt?   @unique @map("telegram_id")
-  whatsappNumber String? @unique @map("whatsapp_number") @db.VarChar(20)
-  preferredCurrency String @default("IDR") @map("preferred_currency") @db.Char(3)
-  locale            String @default("id") @db.VarChar(10)
-  timezone          String @default("Asia/Jakarta") @db.VarChar(50)
+  id         String   @id @default(cuid())
+  email      String?  @unique
+  name       String?
+  image      String?
+  role       Role     @default(USER)
+  telegramId String?  @unique
+  whatsappNo String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  chatMessages ChatMessage[]
-  
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
-
-  // Relasi NextAuth
-  accounts      Account[]
-  sessions      Session[]
-
-  // Relasi Domain Aplikasi
-  wallets       Wallet[]
-  categories    Category[]
-  transactions  Transaction[]
+  wallets      Wallet[]
+  categories   Category[]
+  transactions Transaction[]
+  transfers    Transfer[]    // ✅ INI TAMBAHANNYA
+  chatLogs     ChatLog[]
 
   @@map("users")
 }
 
-model Account {
-  id                String  @id @default(uuid()) @db.Uuid
-  userId            String  @map("user_id") @db.Uuid
-  type              String  @db.VarChar(50)
-  provider          String  @db.VarChar(50)
-  providerAccountId String  @map("provider_account_id") @db.VarChar(255)
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String? @db.VarChar(50)
-  scope             String? @db.Text
-  id_token          String? @db.Text
-  session_state     String? @db.Text
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token") @db.Text
-  userId       String   @map("user_id") @db.Uuid
-  expires      DateTime @db.Timestamptz()
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique @db.Text
-  expires    DateTime @db.Timestamptz()
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
-}
-
-
-// =====================================================================
-// ─── DOMAIN MODELS (APP BUSINESS LOGIC) ──────────────────────────────
-// =====================================================================
-
+// ─── Wallet ─────────────────────────────────────
 model Wallet {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @map("user_id") @db.Uuid
-  name           String   @db.VarChar(100)
-  type           String   @db.VarChar(50) // bank, e-wallet, cash
-  currency       String   @default("IDR") @db.Char(3)
-  initialBalance Decimal  @default(0.00) @map("initial_balance") @db.Decimal(15, 2)
-  isArchived     Boolean  @default(false) @map("is_archived")
-  icon      String? @db.VarChar(100)
-  color     String? @db.VarChar(20)
-  sortOrder Int     @default(0)
-  
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  id         String   @id @default(cuid())
+  name       String
+  balance    Decimal  @default(0.00) @db.Decimal(15, 2)
+  currency   String   @default("IDR") @db.VarChar(3)
+  isArchived Boolean  @default(false) @map("is_archived")
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ledgerEntries  LedgerEntry[]
+  outgoingTransfers Transfer[]    @relation("SourceWallet")
+  incomingTransfers Transfer[]    @relation("DestinationWallet")
+  transactions      Transaction[]
 
-  @@unique([userId, name])
   @@index([userId])
   @@map("wallets")
 }
 
+// ─── Category ───────────────────────────────────
 model Category {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  name      String   @db.VarChar(50)
-  type      String   @db.VarChar(10) // income, expense, transfer
-  icon      String?  @db.VarChar(50)
-  budget Decimal? @db.Decimal(15,2)
-  parentId  String?  @map("parent_id") @db.Uuid
-  
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  id     String          @id @default(cuid())
+  name   String
+  icon   String?
+  type   TransactionType
+  userId String
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children     Category[]    @relation("CategoryHierarchy")
   transactions Transaction[]
 
   @@unique([userId, name])
@@ -130,121 +77,72 @@ model Category {
   @@map("categories")
 }
 
+// ─── Transaction ────────────────────────────────
 model Transaction {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  categoryId      String?  @map("category_id") @db.Uuid
-  type            String   @db.VarChar(10) // income, expense, transfer
-  description     String   @default("") @db.Text
-  totalAmount     Decimal  @map("total_amount") @db.Decimal(15, 2)
-  transactionDate DateTime @default(now()) @map("transaction_date") @db.Timestamptz()
-  source String @default("manual") @db.VarChar(20)
-  // manual
-  // telegram
-  // whatsapp
-  // import
-  // api
+  id          String          @id @default(cuid())
+  amount      Decimal         @db.Decimal(15, 2)
+  type        TransactionType
+  description String?         @db.Text
+  date        DateTime        @default(now())
 
-  externalId String? @map("external_id") @db.VarChar(255)
-  note String? @db.Tex
-  attachments Attachment[]
-  
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId   String
+  wallet     Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category      Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  ledgerEntries LedgerEntry[]
+  transferId String?   @unique
+  transfer   Transfer? @relation(fields: [transferId], references: [id], onDelete: SetNull)
 
-  @@index([userId, transactionDate(sort: Desc)])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date(sort: Desc)])
+  @@index([walletId])
+  @@index([categoryId])
   @@map("transactions")
 }
 
-model LedgerEntry {
-  id            String  @id @default(uuid()) @db.Uuid
-  transactionId String  @map("transaction_id") @db.Uuid
-  walletId      String  @map("wallet_id") @db.Uuid
-  accountType   String  @map("account_type") @db.VarChar(10) 
-  memo String? @db.Text
-  amount        Decimal @db.Decimal(15, 2)
-  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  wallet      Wallet      @relation(fields: [walletId], references: [id], onDelete: Restrict)
+// ─── Transfer ───────────────────────────────────
+model Transfer {
+  id           String   @id @default(cuid())
+  amount       Decimal  @db.Decimal(15, 2)
+  fromWalletId String
+  fromWallet   Wallet   @relation("SourceWallet", fields: [fromWalletId], references: [id], onDelete: Cascade)
+  toWalletId   String
+  toWallet     Wallet   @relation("DestinationWallet", fields: [toWalletId], references: [id], onDelete: Cascade)
+  description  String?  @db.Text
+  date         DateTime @default(now())
 
-  @@unique([transactionId, walletId])
-  @@index([transactionId])
-  @@index([walletId])
-  @@map("ledger_entries")
+  transaction Transaction?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([fromWalletId])
+  @@index([toWalletId])
+  @@map("transfers")
 }
 
-// ─── LOGIN SESSION ─────────────────────────────
-model LoginSession {
-  id         String   @id @default(uuid()) @db.Uuid
-  code       String   @unique @db.VarChar(6)
-  telegramId BigInt?  @map("telegram_id")
-  status     String   @default("pending") @db.VarChar(20) // pending, verified, expired
-  expiresAt  DateTime @map("expires_at") @db.Timestamptz()
-  provider String @default("telegram") @db.VarChar(20)
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  @@index([code])
-  @@map("login_sessions")
-}
-
-model ChatMessage {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  platform   String   @db.VarChar(20)
-  messageId  String   @map("message_id") @db.VarChar(255)
-  senderId   String?  @map("sender_id") @db.VarChar(255)
-  chatId     String?  @map("chat_id") @db.VarChar(255)
-  text       String   @db.Text
-  raw        Json?
-
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([platform, messageId])
-  @@index([userId])
-  @@map("chat_messages")
-}
-
-model ParsedMessage {
-  id String @id @default(uuid()) @db.Uuid
-  chatMessageId String @unique @map("chat_message_id") @db.Uuid
-  success Boolean @default(false)
-  confidence Float @default(0)
-  raw Json?
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  chatMessage ChatMessage @relation(fields: [chatMessageId], references: [id], onDelete: Cascade)
-  @@map("parsed_messages")
-}
-
-model Attachment {
-  id String @id @default(uuid()) @db.Uuid
-  transactionId String @map("transaction_id") @db.Uuid
-  type String @db.VarChar(20)
-  url String @db.Text
-  fileName String? @map("file_name") @db.VarChar(255)
-  mimeType String? @map("mime_type") @db.VarChar(100)
-  size Int?
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-
-  @@index([transactionId])
-  @@map("attachments")
-}
-
-model EventLog {
-  id String @id @default(uuid()) @db.Uuid
-  userId String? @map("user_id") @db.Uuid
-  type String @db.VarChar(50)
-  source String @db.VarChar(30)
-  payload Json?
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+// ─── ChatLog ────────────────────────────────────
+model ChatLog {
+  id           String   @id @default(cuid())
+  platform     String   @db.VarChar(20) // telegram | whatsapp
+  chatId       String   @db.VarChar(50) // ID ruangan chat
+  direction    String   @db.VarChar(10) // incoming | outgoing
+  messageType  String   @default("text") @db.VarChar(20) // text | command | transaction
+  content      String   @db.Text        // Menggantikan content
+  metadata     Json?    // Menggantikan/berfungsi seperti parsedResult
   
-  @@index([userId])
-  @@index([type])
-  @@map("event_logs")
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([platform])
+  @@index([chatId])
+  @@map("chat_logs")
 }

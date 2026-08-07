@@ -1,36 +1,45 @@
 {
   "name": "@zendompi/database",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
+  "description": "Database layer with Prisma ORM and repository pattern",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./balance": "./src/balance/index.ts",
+    "./wallet": "./src/wallet/index.ts",
+    "./transaction": "./src/transaction/index.ts",
+    "./transfer": "./src/transfer/index.ts",
+    "./category": "./src/category/index.ts",
+    "./dashboard": "./src/dashboard/index.ts",
+    "./statistics": "./src/statistics/index.ts",
+    "./user": "./src/user/index.ts"
+  },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "db:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "db:seed": "tsx src/seed.ts",
-    "clean": "rm -rf dist",
-    "build": "pnpm db:generate && tsc"
-  },
-  "keywords": [],
-  "author": "hayaxxdev-bit",
-  "license": "ISC",
-  "devDependencies": {
-    "@prisma/config": "^7.9.1",
-    "@types/node": "^22.15.3",
-    "@types/pg": "^8.20.4",
-    "@zendompi/typescript-config": "workspace:*",
-    "prisma": "^7.9.1",
-    "tsx": "^4.23.5",
-    "typescript": "^5.8.0"
+    "db:seed": "tsx prisma/seed.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.9.0",
+    "@zendompi/shared": "workspace:*",
+    "pg": "^8.22.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "@zendompi/eslint-config": "workspace:*",
+    "@zendompi/typescript-config": "workspace:*",
     "dotenv": "^17.4.2",
-    "pg": "^8.22.0"
+    "prisma": "^7.9.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }
